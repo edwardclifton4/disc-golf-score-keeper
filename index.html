@@ -26,16 +26,18 @@
       --red:    #c04848;
       --mint:   #4caf6a;
     }
+
+    /* position:fixed + overflow:hidden is the most reliable iOS scroll stopper */
     html, body {
+      position:fixed; overflow:hidden;
       width:100%; height:100%;
-      overflow:hidden;
-      overscroll-behavior:none;       /* stop iOS rubber-band */
       background:var(--bg);
+      overscroll-behavior:none;
     }
     body {
       display:flex; flex-direction:column;
-      height:100vh; height:100dvh;
       font-family:'Oswald', sans-serif;
+      touch-action:none;
     }
 
     /* ── Header ─────────────────────────────── */
@@ -63,7 +65,7 @@
     .touch-area {
       flex:1; position:relative;
       display:flex; align-items:center; justify-content:center;
-      touch-action:none;              /* tell browser: hands off */
+      touch-action:none;
     }
 
     /* ── Score ───────────────────────────────── */
@@ -105,8 +107,7 @@
       position:fixed; inset:0; background:var(--bg);
       display:none; flex-direction:column;
       align-items:center; justify-content:center;
-      gap:20px; z-index:20;
-      touch-action:none;
+      gap:20px; z-index:20; touch-action:none;
     }
     .finish-screen.active { display:flex; animation:fromRight 0.24s ease-out; }
 
@@ -127,7 +128,7 @@
     .f-line { font-weight:600; font-size:clamp(1.6rem,7vw,2.1rem); letter-spacing:0.1em; color:#060d06; line-height:1.1; }
     .finish-hint { font-weight:300; font-size:0.7rem; letter-spacing:0.3em; color:var(--dim); text-transform:uppercase; }
 
-    /* ── Results screen ──────────────────────── */
+    /* ── Results ─────────────────────────────── */
     .results-screen {
       position:fixed; inset:0; background:var(--bg);
       display:none; flex-direction:column;
@@ -190,7 +191,7 @@
   const DEFAULT     = 3;
   const HOLD_MS     = 500;
   const FINISH_HOLD = 1000;
-  const SWIPE_PX    = 30;
+  const SWIPE_PX    = 30;   // minimum horizontal px to count as a swipe
   const PAR_HOLE    = 3;
   const CIRC        = 2 * Math.PI * 22.4;
   const FINISH_CIRC = 2 * Math.PI * 132;
@@ -211,38 +212,38 @@
   const resultsScrEl = document.getElementById('resultsScreen');
 
   function saveState() {
-    try { localStorage.setItem('gs6_s', JSON.stringify(scores)); localStorage.setItem('gs6_h', hole); } catch(e){}
+    try { localStorage.setItem('gs7_s', JSON.stringify(scores)); localStorage.setItem('gs7_h', hole); } catch(e){}
   }
   function loadScores() {
-    try { const s = localStorage.getItem('gs6_s'); if(s) return JSON.parse(s); } catch(e){}
+    try { const s = localStorage.getItem('gs7_s'); if(s) return JSON.parse(s); } catch(e){}
     return new Array(HOLES).fill(0);
   }
   function loadHole() {
-    try { const h = localStorage.getItem('gs6_h'); if(h!=null) return Math.min(parseInt(h,10),HOLES-1); } catch(e){}
+    try { const h = localStorage.getItem('gs7_h'); if(h!=null) return Math.min(parseInt(h,10),HOLES-1); } catch(e){}
     return 0;
   }
 
   function getStatus() {
     let str=0, par=0;
     scores.forEach(s => { if(s>0){str+=s; par+=PAR_HOLE;} });
-    const d=str-par;
-    if(d===0) return {text:'Even',cls:''};
-    return d>0 ? {text:'+'+d,cls:'over'} : {text:''+d,cls:'under'};
+    const d = str - par;
+    if(d===0) return {text:'Even', cls:''};
+    return d>0 ? {text:'+'+d, cls:'over'} : {text:''+d, cls:'under'};
   }
 
   function render(dir) {
-    holeNumEl.textContent = hole+1;
-    const has = scores[hole]>0;
+    holeNumEl.textContent = hole + 1;
+    const has = scores[hole] > 0;
     scoreNumEl.textContent = has ? scores[hole] : '';
     touchAreaEl.classList.toggle('scored', has);
-    const {text,cls} = getStatus();
+    const {text, cls} = getStatus();
     statusEl.textContent = text;
-    statusEl.className = 'h-status'+(cls?' '+cls:'');
-    if(dir){
+    statusEl.className = 'h-status' + (cls ? ' '+cls : '');
+    if(dir) {
       touchAreaEl.classList.remove('slide-right','slide-left');
       void touchAreaEl.offsetWidth;
       touchAreaEl.classList.add('slide-'+dir);
-      setTimeout(()=>touchAreaEl.classList.remove('slide-right','slide-left'),280);
+      setTimeout(() => touchAreaEl.classList.remove('slide-right','slide-left'), 280);
     }
   }
 
@@ -250,121 +251,122 @@
     scoreNumEl.classList.remove('anim-up','anim-set');
     void scoreNumEl.offsetWidth;
     scoreNumEl.classList.add(t);
-    setTimeout(()=>scoreNumEl.classList.remove(t),400);
+    setTimeout(() => scoreNumEl.classList.remove(t), 400);
   }
 
   function holdAction() {
-    if(scores[hole]===0){scores[hole]=DEFAULT;animScore('anim-set');}
-    else{scores[hole]=Math.min(scores[hole]+1,20);animScore('anim-up');}
+    if(scores[hole]===0) { scores[hole]=DEFAULT; animScore('anim-set'); }
+    else { scores[hole]=Math.min(scores[hole]+1,20); animScore('anim-up'); }
     render(); saveState();
-    try{navigator.vibrate([20,30,20]);}catch(e){}
+    try { navigator.vibrate([20,30,20]); } catch(e){}
   }
-  function nextHole(){if(hole<HOLES-1){hole++;render('right');saveState();}else showFinish();}
-  function prevHole(){if(hole>0){hole--;render('left');saveState();}}
 
-  function startArc(){
+  function nextHole() { if(hole<HOLES-1){hole++;render('right');saveState();}else showFinish(); }
+  function prevHole() { if(hole>0){hole--;render('left');saveState();} }
+
+  function startArc() {
     holdFillEl.style.transition='none'; holdFillEl.style.strokeDashoffset=CIRC;
     holdArcEl.classList.add('show'); void holdFillEl.offsetWidth;
     holdFillEl.style.transition=`stroke-dashoffset ${HOLD_MS}ms linear`; holdFillEl.style.strokeDashoffset='0';
   }
-  function cancelArc(){
+  function cancelArc() {
     holdArcEl.classList.remove('show'); holdFillEl.style.transition='none'; holdFillEl.style.strokeDashoffset=CIRC;
   }
-  function startFinishArc(){
+  function startFinishArc() {
     finishFillEl.style.transition='none'; finishFillEl.style.strokeDashoffset=FINISH_CIRC;
     finishArcEl.classList.add('show'); void finishFillEl.offsetWidth;
     finishFillEl.style.transition=`stroke-dashoffset ${FINISH_HOLD}ms linear`; finishFillEl.style.strokeDashoffset='0';
   }
-  function cancelFinishArc(){
+  function cancelFinishArc() {
     finishArcEl.classList.remove('show'); finishFillEl.style.transition='none'; finishFillEl.style.strokeDashoffset=FINISH_CIRC;
   }
 
-  function showFinish(){appState='finish';finishScrEl.classList.add('active');}
-  function hideFinish(){appState='playing';finishScrEl.classList.remove('active');}
-  function showResults(){
-    const total=scores.reduce((a,b)=>a+b,0);
-    const played=scores.filter(s=>s>0).length;
-    const diff=total-(played*PAR_HOLE);
-    document.getElementById('rTotal').textContent=total||'—';
-    const p=document.getElementById('rPar');
-    if(!total){p.textContent='—';p.className='r-par even';}
-    else if(diff===0){p.textContent='Even';p.className='r-par even';}
-    else if(diff>0){p.textContent='+'+diff;p.className='r-par over';}
-    else{p.textContent=''+diff;p.className='r-par under';}
-    document.getElementById('rHoles').textContent=played+' of 18 holes scored';
+  function showFinish() { appState='finish'; finishScrEl.classList.add('active'); }
+  function hideFinish() { appState='playing'; finishScrEl.classList.remove('active'); }
+  function showResults() {
+    const total = scores.reduce((a,b)=>a+b,0);
+    const played = scores.filter(s=>s>0).length;
+    const diff = total - (played*PAR_HOLE);
+    document.getElementById('rTotal').textContent = total||'—';
+    const p = document.getElementById('rPar');
+    if(!total)      { p.textContent='—';      p.className='r-par even'; }
+    else if(diff===0){ p.textContent='Even';  p.className='r-par even'; }
+    else if(diff>0)  { p.textContent='+'+diff;p.className='r-par over'; }
+    else             { p.textContent=''+diff; p.className='r-par under'; }
+    document.getElementById('rHoles').textContent = played+' of 18 holes scored';
     finishScrEl.classList.remove('active');
     resultsScrEl.classList.add('active');
     appState='results';
-    try{navigator.vibrate([30,40,30]);}catch(e){}
+    try { navigator.vibrate([30,40,30]); } catch(e){}
   }
 
-  // ── Gesture state ────────────────────────────
-  let tX0=0, tXNow=0;
+  // ── Gesture handling ─────────────────────────
+  // Key insight: swipe is detected using ONLY touchstart + touchend positions.
+  // We do NOT rely on touchmove for swipe detection — iOS can swallow those events.
+  // touchmove is still used to cancel the hold timer early, but isn't required.
+
+  let tX0=0, tY0=0;
   let holdTimer=null, visTimer=null;
-  let holdFired=false, swiping=false;
-  let tracking=false;
+  let holdFired=false;
+  let mouseDown=false, mX0=0, mY0=0;
 
-  function onStart(x){
-    tX0=tXNow=x; holdFired=false; swiping=false; tracking=true;
-    if(appState==='finish'){
+  function gestureStart(x, y) {
+    tX0=x; tY0=y; holdFired=false;
+    if(appState==='finish') {
       startFinishArc();
-      holdTimer=setTimeout(()=>{holdFired=true;cancelFinishArc();showResults();},FINISH_HOLD);
+      holdTimer = setTimeout(() => { holdFired=true; cancelFinishArc(); showResults(); }, FINISH_HOLD);
       return;
     }
     if(appState!=='playing') return;
-    visTimer=setTimeout(startArc,60);
-    holdTimer=setTimeout(()=>{holdFired=true;cancelArc();holdAction();},HOLD_MS);
+    visTimer  = setTimeout(startArc, 60);
+    holdTimer = setTimeout(() => { holdFired=true; cancelArc(); holdAction(); }, HOLD_MS);
   }
 
-  function onMove(x){
-    if(!tracking) return;
-    tXNow=x;
-    if(!swiping && Math.abs(tXNow-tX0)>12){
-      swiping=true;
+  function gestureMove(x) {
+    // Cancel hold early once clearly swiping — but swipe detection doesn't depend on this
+    if(holdTimer && Math.abs(x-tX0) > 15) {
       clearTimeout(holdTimer); clearTimeout(visTimer); holdTimer=null;
-      if(appState==='playing') cancelArc();
-      else if(appState==='finish') cancelFinishArc();
+      cancelArc(); cancelFinishArc();
     }
   }
 
-  function onEnd(){
-    if(!tracking) return;
-    tracking=false;
+  function gestureEnd(xEnd, yEnd) {
     clearTimeout(holdTimer); clearTimeout(visTimer); holdTimer=null;
-    if(appState==='finish'){
+    if(holdFired) return;  // hold already handled
+
+    const dx = xEnd - tX0;
+    const dy = yEnd - tY0;
+    const isSwipe = Math.abs(dx) > SWIPE_PX && Math.abs(dx) > Math.abs(dy);
+
+    if(appState==='finish') {
       cancelFinishArc();
-      if(!holdFired && swiping && (tXNow-tX0)<-SWIPE_PX) hideFinish();
+      if(isSwipe && dx < 0) hideFinish();  // swipe left = back to hole 18
       return;
     }
-    if(appState!=='playing') return;
+    if(appState!=='playing') { cancelArc(); return; }
     cancelArc();
-    const dx=tXNow-tX0;
-    if(swiping && Math.abs(dx)>SWIPE_PX){ dx>0 ? nextHole() : prevHole(); }
+    if(isSwipe) { dx > 0 ? nextHole() : prevHole(); }
   }
 
-  function onCancel(){
-    tracking=false;
-    clearTimeout(holdTimer); clearTimeout(visTimer);
-    cancelArc(); cancelFinishArc();
+  function gestureCancel() {
+    clearTimeout(holdTimer); clearTimeout(visTimer); holdTimer=null;
+    holdFired=false; cancelArc(); cancelFinishArc();
   }
 
-  // ── Attach events ────────────────────────────
-  // Touch and mouse bound on each interactive element.
-  // touchmove MUST be {passive:false} + preventDefault() to stop iOS scroll.
-  function attach(el){
-    el.addEventListener('touchstart',  e=>{e.preventDefault(); onStart(e.touches[0].clientX);}, {passive:false});
-    el.addEventListener('touchmove',   e=>{e.preventDefault(); onMove(e.touches[0].clientX);},  {passive:false});
-    el.addEventListener('touchend',    e=>{e.preventDefault(); onEnd();},                        {passive:false});
-    el.addEventListener('touchcancel', e=>onCancel());
-    el.addEventListener('mousedown',   e=>{e.preventDefault(); onStart(e.clientX);});
-  }
+  // Touch — attached to each interactive element
+  [touchAreaEl, finishScrEl].forEach(el => {
+    el.addEventListener('touchstart',  e => { e.preventDefault(); gestureStart(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
+    el.addEventListener('touchmove',   e => { e.preventDefault(); gestureMove(e.touches[0].clientX); }, {passive:false});
+    el.addEventListener('touchend',    e => { e.preventDefault(); gestureEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY); }, {passive:false});
+    el.addEventListener('touchcancel', e => gestureCancel());
+  });
 
-  attach(touchAreaEl);
-  attach(finishScrEl);
-
-  // Mouse move/up on document so dragging outside element still works
-  document.addEventListener('mousemove', e=>{if(tracking) onMove(e.clientX);});
-  document.addEventListener('mouseup',   e=>{if(tracking) onEnd();});
+  // Mouse — for desktop testing
+  [touchAreaEl, finishScrEl].forEach(el => {
+    el.addEventListener('mousedown', e => { e.preventDefault(); mouseDown=true; mX0=e.clientX; mY0=e.clientY; gestureStart(e.clientX, e.clientY); });
+  });
+  document.addEventListener('mousemove', e => { if(mouseDown) gestureMove(e.clientX); });
+  document.addEventListener('mouseup',   e => { if(mouseDown) { mouseDown=false; gestureEnd(e.clientX, e.clientY); } });
 
   render();
 </script>
