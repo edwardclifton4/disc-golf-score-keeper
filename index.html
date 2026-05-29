@@ -6,7 +6,6 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Golf">
-  <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#060d06">
   <title>Golf Score</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,18 +20,16 @@
     :root {
       --bg:     #060d06;
       --text:   #eeeae0;
-      --dim:    #3a4e3a;
+      --dim:    #2e3e2e;
       --yellow: #f5d020;
       --red:    #c04848;
       --mint:   #4caf6a;
+      --border: rgba(255,255,255,0.09);
     }
-
-    /* position:fixed + overflow:hidden is the most reliable iOS scroll stopper */
     html, body {
       position:fixed; overflow:hidden;
       width:100%; height:100%;
-      background:var(--bg);
-      overscroll-behavior:none;
+      background:var(--bg); overscroll-behavior:none;
     }
     body {
       display:flex; flex-direction:column;
@@ -40,35 +37,60 @@
       touch-action:none;
     }
 
-    /* ── Header ─────────────────────────────── */
-    .header {
+    /* ══ TOP BAR ════════════════════════════════ */
+    .topbar {
       flex-shrink:0;
-      display:flex; flex-direction:column; align-items:center;
-      padding-top:calc(env(safe-area-inset-top,20px) + 20px);
-      padding-bottom:8px; gap:4px;
+      display:flex;
+      padding-top: max(env(safe-area-inset-top,0px), 16px);
+      border-bottom: 1px solid var(--border);
     }
+
+    /* Each of the three cells */
+    .nb {
+      flex:1;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      padding:14px 6px 16px;
+      cursor:pointer;
+      transition: background 0.1s;
+    }
+    .nb-prev   { border-right: 1px solid var(--border); }
+    .nb-center { border-right: 1px solid var(--border); pointer-events:none; }
+
+    .nb-prev.flash, .nb-next.flash { background: rgba(255,255,255,0.06); }
+
+    /* Nav hole numbers */
+    .nb-num {
+      font-weight:600;
+      font-size: min(18vw, 72px);
+      line-height:1; color:var(--dim);
+      transition: color 0.1s;
+    }
+    .nb-next .nb-num { color:var(--text); }
+
+    /* Center cell labels */
     .h-top {
-      display:flex; align-items:baseline; gap:0.4em;
-      font-size:clamp(1rem,4.5vw,1.3rem);
+      display:flex; align-items:baseline; gap:0.35em;
+      font-size:clamp(0.85rem,4vw,1.1rem);
       letter-spacing:0.1em; text-transform:uppercase;
     }
     .h-label { font-weight:300; color:var(--text); }
     .h-num   { font-weight:600; color:var(--text); }
     .h-status {
-      font-size:clamp(0.85rem,3.5vw,1.05rem);
+      font-size:clamp(0.7rem,3vw,0.9rem);
       font-weight:600; letter-spacing:0.12em;
       text-transform:uppercase; color:var(--yellow);
+      margin-top:3px;
     }
     .h-status.over { color:var(--red); }
 
-    /* ── Touch area ──────────────────────────── */
-    .touch-area {
+    /* ══ MAIN AREA ══════════════════════════════ */
+    .main-area {
       flex:1; position:relative;
       display:flex; align-items:center; justify-content:center;
       touch-action:none;
     }
 
-    /* ── Score ───────────────────────────────── */
     .score-num {
       font-size:clamp(110px,44vw,190px);
       font-weight:600; color:var(--text);
@@ -77,16 +99,16 @@
       transition:opacity 0.15s, transform 0.15s;
       pointer-events:none;
     }
-    .touch-area.scored .score-num { opacity:1; transform:scale(1); }
+    .main-area.scored .score-num { opacity:1; transform:scale(1); }
 
     @keyframes bumpUp  { 0%{transform:scale(1);color:var(--text)} 40%{transform:scale(1.13);color:var(--yellow)} 100%{transform:scale(1);color:var(--text)} }
     @keyframes bumpSet { 0%{transform:scale(1);color:var(--text)} 30%{transform:scale(1.18);color:var(--mint)}   70%{transform:scale(0.95);color:var(--mint)} 100%{transform:scale(1);color:var(--text)} }
     .score-num.anim-up  { animation:bumpUp  0.22s ease-out; }
     .score-num.anim-set { animation:bumpSet 0.28s ease-out; }
 
-    /* ── Hold arc ────────────────────────────── */
+    /* Hold arc */
     .hold-arc {
-      position:absolute; top:22%; left:50%; transform:translateX(-50%);
+      position:absolute; top:20%; left:50%; transform:translateX(-50%);
       width:56px; height:56px;
       pointer-events:none; opacity:0; z-index:7; transition:opacity 0.12s;
     }
@@ -96,20 +118,14 @@
                        stroke-dasharray:140.7; stroke-dashoffset:140.7;
                        transform-origin:28px 28px; transform:rotate(-90deg); }
 
-    /* ── Slide transitions ───────────────────── */
-    @keyframes fromRight { from{opacity:0;transform:translateX(55px) scale(0.9)} to{opacity:1;transform:none} }
-    @keyframes fromLeft  { from{opacity:0;transform:translateX(-55px) scale(0.9)} to{opacity:1;transform:none} }
-    .slide-right .score-num { animation:fromRight 0.22s ease-out; }
-    .slide-left  .score-num { animation:fromLeft  0.22s ease-out; }
-
-    /* ── Finish screen ───────────────────────── */
+    /* ══ FINISH SCREEN ══════════════════════════ */
     .finish-screen {
       position:fixed; inset:0; background:var(--bg);
       display:none; flex-direction:column;
       align-items:center; justify-content:center;
       gap:20px; z-index:20; touch-action:none;
     }
-    .finish-screen.active { display:flex; animation:fromRight 0.24s ease-out; }
+    .finish-screen.active { display:flex; }
 
     .finish-wrap { position:relative; width:270px; height:270px; }
     .finish-arc-svg {
@@ -126,9 +142,10 @@
       display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
     }
     .f-line { font-weight:600; font-size:clamp(1.6rem,7vw,2.1rem); letter-spacing:0.1em; color:#060d06; line-height:1.1; }
-    .finish-hint { font-weight:300; font-size:0.7rem; letter-spacing:0.3em; color:var(--dim); text-transform:uppercase; }
+    .finish-hint { font-weight:300; font-size:0.7rem; letter-spacing:0.3em; color:var(--yellow); text-transform:uppercase; }
+    .finish-back { font-weight:300; font-size:0.65rem; letter-spacing:0.25em; color:var(--yellow); text-transform:uppercase; margin-top:4px; }
 
-    /* ── Results ─────────────────────────────── */
+    /* ══ RESULTS SCREEN ══════════════════════════ */
     .results-screen {
       position:fixed; inset:0; background:var(--bg);
       display:none; flex-direction:column;
@@ -138,26 +155,36 @@
     .results-screen.active { display:flex; animation:fadeUp 0.3s ease-out; }
     @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
 
-    .r-label { font-weight:300; font-size:0.7rem; letter-spacing:0.4em; color:var(--dim); text-transform:uppercase; margin-bottom:4px; }
-    .r-total { font-weight:600; font-size:clamp(100px,42vw,180px); color:var(--text); line-height:1; letter-spacing:-0.02em; }
+    .r-label { font-weight:300; font-size:0.7rem; letter-spacing:0.4em; color:var(--yellow); text-transform:uppercase; margin-bottom:4px; }
+    .r-total { font-weight:600; font-size:clamp(100px,42vw,180px); color:var(--text); line-height:1; }
     .r-par   { font-weight:600; font-size:2rem; letter-spacing:0.06em; margin-top:6px; }
     .r-par.even  { color:var(--yellow); }
     .r-par.over  { color:var(--red);    }
     .r-par.under { color:var(--yellow); }
-    .r-holes { font-weight:300; font-size:0.7rem; letter-spacing:0.25em; color:var(--dim); text-transform:uppercase; margin-top:12px; }
+    .r-holes { font-weight:300; font-size:0.7rem; letter-spacing:0.25em; color:var(--yellow); text-transform:uppercase; margin-top:12px; }
   </style>
 </head>
 <body>
 
-  <div class="header">
-    <div class="h-top">
-      <span class="h-label">Hole</span>
-      <span class="h-num" id="holeNum">1</span>
+  <!-- ── Top bar: prev | current | next ── -->
+  <div class="topbar">
+    <div class="nb nb-prev" id="nbPrev">
+      <span class="nb-num" id="prevNum"></span>
     </div>
-    <div class="h-status" id="statusText">Even</div>
+    <div class="nb nb-center">
+      <div class="h-top">
+        <span class="h-label">Hole</span>
+        <span class="h-num" id="holeNum">1</span>
+      </div>
+      <div class="h-status" id="statusText">Even</div>
+    </div>
+    <div class="nb nb-next" id="nbNext">
+      <span class="nb-num" id="nextNum">2</span>
+    </div>
   </div>
 
-  <div class="touch-area" id="touchArea">
+  <!-- ── Main scoring area ── -->
+  <div class="main-area" id="mainArea">
     <div class="score-num" id="scoreNum"></div>
     <svg class="hold-arc" id="holdArc" viewBox="0 0 56 56">
       <circle class="track" cx="28" cy="28" r="22.4"/>
@@ -165,6 +192,7 @@
     </svg>
   </div>
 
+  <!-- ── Finish screen ── -->
   <div class="finish-screen" id="finishScreen">
     <div class="finish-wrap">
       <svg class="finish-arc-svg" id="finishArcSvg" viewBox="0 0 270 270">
@@ -177,8 +205,10 @@
       </div>
     </div>
     <div class="finish-hint">hold to confirm</div>
+    <div class="finish-back" id="finishBack">tap here to go back</div>
   </div>
 
+  <!-- ── Results screen ── -->
   <div class="results-screen" id="resultsScreen">
     <div class="r-label">Total Score</div>
     <div class="r-total" id="rTotal">0</div>
@@ -191,7 +221,6 @@
   const DEFAULT     = 3;
   const HOLD_MS     = 500;
   const FINISH_HOLD = 1000;
-  const SWIPE_PX    = 30;   // minimum horizontal px to count as a swipe
   const PAR_HOLE    = 3;
   const CIRC        = 2 * Math.PI * 22.4;
   const FINISH_CIRC = 2 * Math.PI * 132;
@@ -202,8 +231,12 @@
 
   const holeNumEl    = document.getElementById('holeNum');
   const statusEl     = document.getElementById('statusText');
+  const prevNumEl    = document.getElementById('prevNum');
+  const nextNumEl    = document.getElementById('nextNum');
+  const nbPrevEl     = document.getElementById('nbPrev');
+  const nbNextEl     = document.getElementById('nbNext');
+  const mainAreaEl   = document.getElementById('mainArea');
   const scoreNumEl   = document.getElementById('scoreNum');
-  const touchAreaEl  = document.getElementById('touchArea');
   const holdArcEl    = document.getElementById('holdArc');
   const holdFillEl   = document.getElementById('holdFill');
   const finishScrEl  = document.getElementById('finishScreen');
@@ -211,162 +244,181 @@
   const finishFillEl = document.getElementById('finishArcFill');
   const resultsScrEl = document.getElementById('resultsScreen');
 
-  function saveState() {
-    try { localStorage.setItem('gs7_s', JSON.stringify(scores)); localStorage.setItem('gs7_h', hole); } catch(e){}
+  function saveState(){
+    try{localStorage.setItem('gs8_s',JSON.stringify(scores));localStorage.setItem('gs8_h',hole);}catch(e){}
   }
-  function loadScores() {
-    try { const s = localStorage.getItem('gs7_s'); if(s) return JSON.parse(s); } catch(e){}
+  function loadScores(){
+    try{const s=localStorage.getItem('gs8_s');if(s)return JSON.parse(s);}catch(e){}
     return new Array(HOLES).fill(0);
   }
-  function loadHole() {
-    try { const h = localStorage.getItem('gs7_h'); if(h!=null) return Math.min(parseInt(h,10),HOLES-1); } catch(e){}
+  function loadHole(){
+    try{const h=localStorage.getItem('gs8_h');if(h!=null)return Math.min(parseInt(h,10),HOLES-1);}catch(e){}
     return 0;
   }
 
-  function getStatus() {
-    let str=0, par=0;
-    scores.forEach(s => { if(s>0){str+=s; par+=PAR_HOLE;} });
-    const d = str - par;
-    if(d===0) return {text:'Even', cls:''};
-    return d>0 ? {text:'+'+d, cls:'over'} : {text:''+d, cls:'under'};
+  function getStatus(){
+    let str=0,par=0;
+    scores.forEach(s=>{if(s>0){str+=s;par+=PAR_HOLE;}});
+    const d=str-par;
+    if(d===0)return{text:'Even',cls:''};
+    return d>0?{text:'+'+d,cls:'over'}:{text:''+d,cls:'under'};
   }
 
-  function render(dir) {
-    holeNumEl.textContent = hole + 1;
-    const has = scores[hole] > 0;
+  function render(){
+    holeNumEl.textContent = hole+1;
+    // Left nav cell: previous hole
+    prevNumEl.textContent = hole > 0 ? hole : '';
+    // Right nav cell: next hole or END
+    nextNumEl.textContent = hole < HOLES-1 ? hole+2 : 'End';
+    // Score
+    const has = scores[hole]>0;
     scoreNumEl.textContent = has ? scores[hole] : '';
-    touchAreaEl.classList.toggle('scored', has);
-    const {text, cls} = getStatus();
+    mainAreaEl.classList.toggle('scored', has);
+    // Status
+    const {text,cls} = getStatus();
     statusEl.textContent = text;
-    statusEl.className = 'h-status' + (cls ? ' '+cls : '');
-    if(dir) {
-      touchAreaEl.classList.remove('slide-right','slide-left');
-      void touchAreaEl.offsetWidth;
-      touchAreaEl.classList.add('slide-'+dir);
-      setTimeout(() => touchAreaEl.classList.remove('slide-right','slide-left'), 280);
-    }
+    statusEl.className = 'h-status'+(cls?' '+cls:'');
   }
 
-  function animScore(t) {
+  function animScore(t){
     scoreNumEl.classList.remove('anim-up','anim-set');
     void scoreNumEl.offsetWidth;
     scoreNumEl.classList.add(t);
-    setTimeout(() => scoreNumEl.classList.remove(t), 400);
+    setTimeout(()=>scoreNumEl.classList.remove(t),400);
   }
 
-  function holdAction() {
-    if(scores[hole]===0) { scores[hole]=DEFAULT; animScore('anim-set'); }
-    else { scores[hole]=Math.min(scores[hole]+1,20); animScore('anim-up'); }
+  function holdAction(){
+    if(scores[hole]===0){scores[hole]=DEFAULT;animScore('anim-set');}
+    else{scores[hole]=Math.min(scores[hole]+1,20);animScore('anim-up');}
     render(); saveState();
-    try { navigator.vibrate([20,30,20]); } catch(e){}
+    try{navigator.vibrate([20,30,20]);}catch(e){}
   }
 
-  function nextHole() { if(hole<HOLES-1){hole++;render('right');saveState();}else showFinish(); }
-  function prevHole() { if(hole>0){hole--;render('left');saveState();} }
-
-  function startArc() {
-    holdFillEl.style.transition='none'; holdFillEl.style.strokeDashoffset=CIRC;
-    holdArcEl.classList.add('show'); void holdFillEl.offsetWidth;
-    holdFillEl.style.transition=`stroke-dashoffset ${HOLD_MS}ms linear`; holdFillEl.style.strokeDashoffset='0';
+  function goNext(){
+    if(hole<HOLES-1){hole++;render();saveState();}
+    else showFinish();
   }
-  function cancelArc() {
-    holdArcEl.classList.remove('show'); holdFillEl.style.transition='none'; holdFillEl.style.strokeDashoffset=CIRC;
-  }
-  function startFinishArc() {
-    finishFillEl.style.transition='none'; finishFillEl.style.strokeDashoffset=FINISH_CIRC;
-    finishArcEl.classList.add('show'); void finishFillEl.offsetWidth;
-    finishFillEl.style.transition=`stroke-dashoffset ${FINISH_HOLD}ms linear`; finishFillEl.style.strokeDashoffset='0';
-  }
-  function cancelFinishArc() {
-    finishArcEl.classList.remove('show'); finishFillEl.style.transition='none'; finishFillEl.style.strokeDashoffset=FINISH_CIRC;
+  function goPrev(){
+    if(hole>0){hole--;render();saveState();}
   }
 
-  function showFinish() { appState='finish'; finishScrEl.classList.add('active'); }
-  function hideFinish() { appState='playing'; finishScrEl.classList.remove('active'); }
-  function showResults() {
-    const total = scores.reduce((a,b)=>a+b,0);
-    const played = scores.filter(s=>s>0).length;
-    const diff = total - (played*PAR_HOLE);
-    document.getElementById('rTotal').textContent = total||'—';
-    const p = document.getElementById('rPar');
-    if(!total)      { p.textContent='—';      p.className='r-par even'; }
-    else if(diff===0){ p.textContent='Even';  p.className='r-par even'; }
-    else if(diff>0)  { p.textContent='+'+diff;p.className='r-par over'; }
-    else             { p.textContent=''+diff; p.className='r-par under'; }
-    document.getElementById('rHoles').textContent = played+' of 18 holes scored';
+  // ── Scoring hold arc ─────────────────────────
+  function startArc(){
+    holdFillEl.style.transition='none';holdFillEl.style.strokeDashoffset=CIRC;
+    holdArcEl.classList.add('show');void holdFillEl.offsetWidth;
+    holdFillEl.style.transition=`stroke-dashoffset ${HOLD_MS}ms linear`;holdFillEl.style.strokeDashoffset='0';
+  }
+  function cancelArc(){
+    holdArcEl.classList.remove('show');holdFillEl.style.transition='none';holdFillEl.style.strokeDashoffset=CIRC;
+  }
+
+  // ── Finish arc ────────────────────────────────
+  function startFinishArc(){
+    finishFillEl.style.transition='none';finishFillEl.style.strokeDashoffset=FINISH_CIRC;
+    finishArcEl.classList.add('show');void finishFillEl.offsetWidth;
+    finishFillEl.style.transition=`stroke-dashoffset ${FINISH_HOLD}ms linear`;finishFillEl.style.strokeDashoffset='0';
+  }
+  function cancelFinishArc(){
+    finishArcEl.classList.remove('show');finishFillEl.style.transition='none';finishFillEl.style.strokeDashoffset=FINISH_CIRC;
+  }
+
+  function showFinish(){appState='finish';finishScrEl.classList.add('active');}
+  function hideFinish(){appState='playing';finishScrEl.classList.remove('active');}
+
+  function showResults(){
+    const total=scores.reduce((a,b)=>a+b,0);
+    const played=scores.filter(s=>s>0).length;
+    const diff=total-(played*PAR_HOLE);
+    document.getElementById('rTotal').textContent=total||'—';
+    const p=document.getElementById('rPar');
+    if(!total){p.textContent='—';p.className='r-par even';}
+    else if(diff===0){p.textContent='Even';p.className='r-par even';}
+    else if(diff>0){p.textContent='+'+diff;p.className='r-par over';}
+    else{p.textContent=''+diff;p.className='r-par under';}
+    document.getElementById('rHoles').textContent=played+' of 18 holes scored';
     finishScrEl.classList.remove('active');
     resultsScrEl.classList.add('active');
     appState='results';
-    try { navigator.vibrate([30,40,30]); } catch(e){}
+    try{navigator.vibrate([30,40,30]);}catch(e){}
   }
 
-  // ── Gesture handling ─────────────────────────
-  // Key insight: swipe is detected using ONLY touchstart + touchend positions.
-  // We do NOT rely on touchmove for swipe detection — iOS can swallow those events.
-  // touchmove is still used to cancel the hold timer early, but isn't required.
+  // ── NAV CELLS: simple tap to navigate ────────
+  // No swipe needed. Tap left = prev hole, tap right = next hole.
+  function attachNavCell(el, action){
+    let sx=0;
+    el.addEventListener('touchstart', e=>{
+      e.preventDefault();
+      sx = e.touches[0].clientX;
+      el.classList.add('flash');
+    },{passive:false});
+    el.addEventListener('touchend', e=>{
+      e.preventDefault();
+      el.classList.remove('flash');
+      const dx = e.changedTouches[0].clientX - sx;
+      if(Math.abs(dx) < 30 && appState==='playing') action();
+    },{passive:false});
+    el.addEventListener('touchcancel', ()=>el.classList.remove('flash'));
+    // Mouse
+    let msx=0;
+    el.addEventListener('mousedown', e=>{e.preventDefault();msx=e.clientX;el.classList.add('flash');});
+    el.addEventListener('mouseup', e=>{el.classList.remove('flash');if(Math.abs(e.clientX-msx)<30&&appState==='playing')action();});
+    el.addEventListener('mouseleave', ()=>el.classList.remove('flash'));
+  }
 
-  let tX0=0, tY0=0;
-  let holdTimer=null, visTimer=null;
-  let holdFired=false;
-  let mouseDown=false, mX0=0, mY0=0;
+  attachNavCell(nbPrevEl, goPrev);
+  attachNavCell(nbNextEl, goNext);
 
-  function gestureStart(x, y) {
-    tX0=x; tY0=y; holdFired=false;
-    if(appState==='finish') {
-      startFinishArc();
-      holdTimer = setTimeout(() => { holdFired=true; cancelFinishArc(); showResults(); }, FINISH_HOLD);
-      return;
-    }
-    if(appState!=='playing') return;
+  // ── MAIN AREA: hold to score ──────────────────
+  let holdTimer=null, visTimer=null, holdFired=false, mainStartX=0, mainStartY=0;
+
+  function mainStart(x,y){
+    mainStartX=x; mainStartY=y; holdFired=false;
     visTimer  = setTimeout(startArc, 60);
-    holdTimer = setTimeout(() => { holdFired=true; cancelArc(); holdAction(); }, HOLD_MS);
+    holdTimer = setTimeout(()=>{holdFired=true;cancelArc();holdAction();},HOLD_MS);
   }
-
-  function gestureMove(x) {
-    // Cancel hold early once clearly swiping — but swipe detection doesn't depend on this
-    if(holdTimer && Math.abs(x-tX0) > 15) {
-      clearTimeout(holdTimer); clearTimeout(visTimer); holdTimer=null;
-      cancelArc(); cancelFinishArc();
-    }
-  }
-
-  function gestureEnd(xEnd, yEnd) {
-    clearTimeout(holdTimer); clearTimeout(visTimer); holdTimer=null;
-    if(holdFired) return;  // hold already handled
-
-    const dx = xEnd - tX0;
-    const dy = yEnd - tY0;
-    const isSwipe = Math.abs(dx) > SWIPE_PX && Math.abs(dx) > Math.abs(dy);
-
-    if(appState==='finish') {
-      cancelFinishArc();
-      if(isSwipe && dx < 0) hideFinish();  // swipe left = back to hole 18
-      return;
-    }
-    if(appState!=='playing') { cancelArc(); return; }
+  function mainEnd(xEnd,yEnd){
+    clearTimeout(holdTimer);clearTimeout(visTimer);holdTimer=null;
     cancelArc();
-    if(isSwipe) { dx > 0 ? nextHole() : prevHole(); }
+    // no tap action — hold only
+  }
+  function mainCancel(){
+    clearTimeout(holdTimer);clearTimeout(visTimer);holdTimer=null;
+    cancelArc();
   }
 
-  function gestureCancel() {
-    clearTimeout(holdTimer); clearTimeout(visTimer); holdTimer=null;
-    holdFired=false; cancelArc(); cancelFinishArc();
-  }
+  mainAreaEl.addEventListener('touchstart', e=>{e.preventDefault();mainStart(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
+  mainAreaEl.addEventListener('touchend',   e=>{e.preventDefault();mainEnd(e.changedTouches[0].clientX,e.changedTouches[0].clientY);},{passive:false});
+  mainAreaEl.addEventListener('touchcancel',e=>mainCancel());
+  let mDown=false;
+  mainAreaEl.addEventListener('mousedown', e=>{e.preventDefault();mDown=true;mainStart(e.clientX,e.clientY);});
+  document.addEventListener('mouseup', e=>{if(mDown){mDown=false;mainEnd(e.clientX,e.clientY);}});
 
-  // Touch — attached to each interactive element
-  [touchAreaEl, finishScrEl].forEach(el => {
-    el.addEventListener('touchstart',  e => { e.preventDefault(); gestureStart(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
-    el.addEventListener('touchmove',   e => { e.preventDefault(); gestureMove(e.touches[0].clientX); }, {passive:false});
-    el.addEventListener('touchend',    e => { e.preventDefault(); gestureEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY); }, {passive:false});
-    el.addEventListener('touchcancel', e => gestureCancel());
+  // ── FINISH SCREEN: hold to confirm, tap back ─
+  let fHoldTimer=null, fHoldFired=false;
+  finishScrEl.addEventListener('touchstart', e=>{
+    e.preventDefault();
+    if(e.target===document.getElementById('finishBack')){hideFinish();return;}
+    fHoldFired=false;
+    startFinishArc();
+    fHoldTimer=setTimeout(()=>{fHoldFired=true;cancelFinishArc();showResults();},FINISH_HOLD);
+  },{passive:false});
+  finishScrEl.addEventListener('touchend', e=>{
+    e.preventDefault();
+    clearTimeout(fHoldTimer);
+    if(!fHoldFired) cancelFinishArc();
+  },{passive:false});
+  finishScrEl.addEventListener('touchcancel',()=>{clearTimeout(fHoldTimer);cancelFinishArc();});
+  // Mouse
+  let fmDown=false;
+  finishScrEl.addEventListener('mousedown', e=>{
+    if(e.target===document.getElementById('finishBack')){hideFinish();return;}
+    fmDown=true; fHoldFired=false;
+    startFinishArc();
+    fHoldTimer=setTimeout(()=>{fHoldFired=true;cancelFinishArc();showResults();},FINISH_HOLD);
   });
-
-  // Mouse — for desktop testing
-  [touchAreaEl, finishScrEl].forEach(el => {
-    el.addEventListener('mousedown', e => { e.preventDefault(); mouseDown=true; mX0=e.clientX; mY0=e.clientY; gestureStart(e.clientX, e.clientY); });
+  document.addEventListener('mouseup', e=>{
+    if(fmDown){fmDown=false;clearTimeout(fHoldTimer);if(!fHoldFired)cancelFinishArc();}
   });
-  document.addEventListener('mousemove', e => { if(mouseDown) gestureMove(e.clientX); });
-  document.addEventListener('mouseup',   e => { if(mouseDown) { mouseDown=false; gestureEnd(e.clientX, e.clientY); } });
 
   render();
 </script>
